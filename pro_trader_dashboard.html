@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Trader Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080c14; --bg2:#0d1420; --bg3:#111928; --card:#0f1923;
+  --border:#1e2d42; --green:#00ff88; --green2:#00c96a;
+  --red:#ff3c5f; --yellow:#ffd23f; --blue:#3b9eff;
+  --purple:#a855f7; --orange:#ff8c42; --text:#e8f0fe; --muted:#6b7fa3;
+  --glow:0 0 24px rgba(0,255,136,0.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* ── HEADER ── */
+header{background:rgba(13,20,32,0.95);border-bottom:1px solid var(--border);padding:12px 0;position:sticky;top:0;z-index:200;backdrop-filter:blur(12px);}
+.hdr{display:flex;align-items:center;gap:16px;padding:0 20px;flex-wrap:wrap;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--green);letter-spacing:3px;text-shadow:0 0 30px rgba(0,255,136,0.4);white-space:nowrap;}
+.logo span{color:var(--text);}
+.live-pill{display:flex;align-items:center;gap:7px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);border-radius:20px;padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);}
+.dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.6);}}
+.clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-left:auto;}
+.market-status{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;font-weight:700;}
+.market-open{background:rgba(0,255,136,0.12);color:var(--green);border:1px solid rgba(0,255,136,0.25);}
+.market-closed{background:rgba(255,60,95,0.12);color:var(--red);border:1px solid rgba(255,60,95,0.25);}
+
+/* ── TICKER ── */
+.ticker-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 0;overflow:hidden;}
+.ticker-scroll{display:flex;gap:40px;animation:scrollx 35s linear infinite;white-space:nowrap;width:max-content;}
+@keyframes scrollx{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ti{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;}
+.ti-name{color:var(--muted);}
+.ti-val{color:var(--text);font-weight:700;}
+.up{color:var(--green);}.dn{color:var(--red);}.neu{color:var(--yellow);}
+
+/* ── TAB NAV ── */
+.tab-nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:0;overflow-x:auto;position:sticky;top:57px;z-index:100;}
+.tab-btn{padding:12px 18px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--muted);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s;letter-spacing:.5px;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green);}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 110px);}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:16px 0;position:sticky;top:110px;height:calc(100vh - 110px);overflow-y:auto;}
+.sidebar-sec{margin-bottom:6px;}
+.sidebar-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;padding:8px 18px 4px;text-transform:uppercase;}
+.nav-a{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;border-left:3px solid transparent;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .2s;}
+.nav-a:hover{background:rgba(0,255,136,0.05);color:var(--text);border-left-color:rgba(0,255,136,0.4);}
+.nav-a.active{background:rgba(0,255,136,0.08);color:var(--green);border-left-color:var(--green);}
+.nav-icon{font-size:15px;width:18px;text-align:center;}
+.content-area{padding:24px;overflow-y:auto;position:relative;z-index:1;}
+
+/* ── TAB PANELS ── */
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{display:flex;align-items:center;gap:14px;margin-bottom:20px;}
+.sec-tag{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.25);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;padding:3px 9px;border-radius:4px;}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--text);}
+
+/* ── CARD BASE ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all .25s;}
+.card:hover{border-color:rgba(0,255,136,0.2);}
+.card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-title-bar{width:3px;height:14px;border-radius:2px;flex-shrink:0;}
+
+/* ── GRID HELPERS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+/* ── FRAMEWORK STEPS ── */
+.step-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:24px;}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden;transition:all .3s;}
+.step-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac,var(--green));}
+.step-card:hover{transform:translateY(-2px);box-shadow:var(--glow);}
+.step-num{font-family:'Bebas Neue',sans-serif;font-size:52px;color:rgba(255,255,255,0.04);position:absolute;top:6px;right:14px;line-height:1;}
+.step-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.step-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;background:var(--ic,rgba(0,255,136,0.1));}
+.step-lbl{font-size:15px;font-weight:700;color:var(--text);}
+.step-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+.step-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;}
+.step-links{display:flex;flex-direction:column;gap:6px;}
+.tlink{display:flex;align-items:center;gap:8px;padding:7px 11px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--text);font-size:12px;font-weight:600;transition:all .2s;}
+.tlink:hover{background:rgba(0,255,136,0.07);border-color:rgba(0,255,136,0.25);color:var(--green);transform:translateX(3px);}
+.lbadge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;}
+.lb-nse{background:rgba(255,210,63,0.1);color:var(--yellow);border:1px solid rgba(255,210,63,0.2);}
+.lb-free{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.2);}
+
+/* ── CHECKLIST ── */
+.cl-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.ci{display:flex;align-items:center;gap:10px;padding:9px 13px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;user-select:none;}
+.ci:hover{border-color:rgba(0,255,136,0.2);}
+.ci.chk{background:rgba(0,255,136,0.07);border-color:rgba(0,255,136,0.22);}
+.cb{width:17px;height:17px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:10px;}
+.ci.chk .cb{background:var(--green);border-color:var(--green);color:var(--bg);}
+.ct{font-size:12px;font-weight:600;color:var(--muted);}
+.ci.chk .ct{color:var(--text);text-decoration:line-through;text-decoration-color:var(--green);}
+.cl-progress{margin-bottom:12px;}
+.cl-bar-wrap{background:rgba(255,255,255,0.05);border-radius:4px;height:6px;margin-top:6px;overflow:hidden;}
+.cl-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--blue));border-radius:4px;transition:width .4s ease;}
+.cl-meta{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+
+/* ── NOTES TABLES ── */
+.ntable{width:100%;border-collapse:collapse;font-size:12px;}
+.ntable th{background:rgba(255,255,255,0.04);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;padding:6px 9px;text-align:left;border-bottom:1px solid var(--border);}
+.ntable td{padding:6px 9px;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--muted);font-size:11px;}
+.ntable tr:last-child td{border-bottom:none;}
+.ntable tr:hover td{background:rgba(255,255,255,0.02);color:var(--text);}
+.bull{color:var(--green);font-weight:700;}.bear{color:var(--red);font-weight:700;}.neut{color:var(--yellow);font-weight:700;}
+
+/* ── VIX BARS ── */
+.vix-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:11px;}
+.vix-lbl{font-family:'JetBrains Mono',monospace;color:var(--muted);width:55px;flex-shrink:0;}
+.vix-wrap{flex:1;height:18px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;}
+.vix-fill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:7px;font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.vix-act{font-size:11px;color:var(--muted);width:130px;flex-shrink:0;}
+
+/* ── RULES ── */
+.rules-box{background:linear-gradient(135deg,rgba(255,60,95,.07),rgba(255,60,95,.02));border:1px solid rgba(255,60,95,.18);border-radius:12px;padding:18px;margin-bottom:24px;}
+.rules-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--red);margin-bottom:12px;}
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.rule-item{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;background:rgba(255,60,95,.04);border:1px solid rgba(255,60,95,.1);border-radius:7px;font-size:12px;color:var(--text);}
+.rule-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);flex-shrink:0;margin-top:2px;}
+
+/* ══════════════════════════════════════════
+   TOOL PANELS
+══════════════════════════════════════════ */
+
+/* ── INPUTS ── */
+.inp-group{margin-bottom:12px;}
+.inp-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px;display:block;}
+.inp{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:all .2s;}
+.inp:focus{border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.04);}
+select.inp option{background:var(--bg2);}
+.inp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border-radius:7px;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;transition:all .2s;}
+.btn-green{background:var(--green);color:var(--bg);}
+.btn-green:hover{background:var(--green2);transform:translateY(-1px);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{opacity:.85;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--green);color:var(--green);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+
+/* ── RESULT BOX ── */
+.result-box{background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:8px;padding:14px;margin-top:12px;}
+.result-box.red-box{background:rgba(255,60,95,0.06);border-color:rgba(255,60,95,0.2);}
+.result-box.blue-box{background:rgba(59,158,255,0.06);border-color:rgba(59,158,255,0.2);}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;}
+.result-row:last-child{border-bottom:none;}
+.result-key{color:var(--muted);}
+.result-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;}
+.big-result{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;text-align:center;margin:8px 0;}
+
+/* ── JOURNAL ── */
+.journal-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.journal-form .full{grid-column:1/-1;}
+.trade-table{width:100%;border-collapse:collapse;font-size:12px;}
+.trade-table th{background:rgba(255,255,255,0.05);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+.trade-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;color:var(--muted);}
+.trade-table tr:hover td{background:rgba(255,255,255,0.02);color:var(--text);}
+.tag{display:inline-block;padding:2px 7px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;}
+.tag-buy{background:rgba(0,255,136,.15);color:var(--green);}
+.tag-sell{background:rgba(255,60,95,.15);color:var(--red);}
+.tag-win{background:rgba(0,255,136,.12);color:var(--green);}
+.tag-loss{background:rgba(255,60,95,.12);color:var(--red);}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.stat-box{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;}
+.stat-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:2px;}
+
+/* ── SENTIMENT ── */
+.sentiment-meter{position:relative;margin:16px auto;width:220px;height:120px;}
+.sentiment-arc{overflow:visible;}
+.sent-needle{transform-origin:110px 110px;transition:transform .8s cubic-bezier(.34,1.56,.64,1);}
+.sent-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;margin-top:4px;}
+.sent-value{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin-top:4px;}
+.sent-tag{text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px;}
+.sent-factors{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sf{display:flex;flex-direction:column;gap:4px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:7px;}
+.sf-name{font-size:11px;color:var(--muted);}
+.sf-bar-wrap{height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.sf-bar{height:100%;border-radius:3px;transition:width .6s ease;}
+.sf-val{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;}
+
+/* ── SR CALC ── */
+.sr-result{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.sr-level{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;}
+.sr-r{background:rgba(255,60,95,.08);border:1px solid rgba(255,60,95,.15);}
+.sr-s{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.15);}
+.sr-pivot{background:rgba(255,210,63,.08);border:1px solid rgba(255,210,63,.15);}
+.sr-tag{width:30px;font-weight:700;flex-shrink:0;}
+.sr-val{flex:1;font-weight:700;}
+.sr-desc{color:var(--muted);font-size:10px;}
+
+/* ── TIMER ── */
+.timer-display{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;text-align:center;color:var(--green);text-shadow:0 0 30px rgba(0,255,136,0.3);line-height:1;}
+.session-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.session-card{padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;transition:all .2s;}
+.session-card:hover{border-color:rgba(0,255,136,0.3);}
+.session-card.active-session{background:rgba(0,255,136,0.08);border-color:rgba(0,255,136,0.35);}
+.session-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:3px;}
+.session-name{font-size:13px;font-weight:700;}
+.alert-list{display:flex;flex-direction:column;gap:7px;}
+.alert-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:7px;font-size:12px;}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.alert-pending{background:var(--yellow);}
+.alert-done{background:var(--green);}
+.alert-upcoming{background:var(--muted);}
+
+/* ── EVENTS CALENDAR ── */
+.events-list{display:flex;flex-direction:column;gap:8px;}
+.event-item{display:flex;gap:14px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;transition:all .2s;}
+.event-item:hover{border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.03);}
+.event-date{text-align:center;flex-shrink:0;width:44px;}
+.event-day{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green);line-height:1;}
+.event-month{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);}
+.event-body{flex:1;}
+.event-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.event-meta{font-size:11px;color:var(--muted);}
+.imp-badge{font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;font-weight:700;margin-left:8px;}
+.imp-high{background:rgba(255,60,95,.15);color:var(--red);}
+.imp-med{background:rgba(255,210,63,.12);color:var(--yellow);}
+.imp-low{background:rgba(107,127,163,.15);color:var(--muted);}
+
+/* ── RR TOOL ── */
+.rr-visual{position:relative;height:60px;border-radius:8px;overflow:hidden;margin:12px 0;display:flex;}
+.rr-risk{background:linear-gradient(90deg,rgba(255,60,95,.5),rgba(255,60,95,.2));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--red);transition:flex .4s ease;}
+.rr-reward{background:linear-gradient(90deg,rgba(0,255,136,.2),rgba(0,255,136,.5));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--green);transition:flex .4s ease;}
+
+/* ── POSITION CALC ── */
+.pos-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.pos-res{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.pos-res-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;}
+.pos-res-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:2px;}
+
+/* ── TABS inside panel ── */
+.inner-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.it-btn{padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;}
+.it-btn.active{color:var(--green);border-bottom-color:var(--green);}
+.it-panel{display:none;}
+.it-panel.active{display:block;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .g2,.g3,.g4,.cl-grid,.rules-grid,.journal-form,.stats-row,.session-grid,.pos-result-grid{grid-template-columns:1fr;}
+  .inp-row{grid-template-columns:1fr;}
+}
+
+.fade-in{opacity:0;transform:translateY(16px);animation:fadeUp .45s ease forwards;}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0);}}
+.fade-in:nth-child(1){animation-delay:.04s;}
+.fade-in:nth-child(2){animation-delay:.08s;}
+.fade-in:nth-child(3){animation-delay:.12s;}
+.fade-in:nth-child(4){animation-delay:.16s;}
+.fade-in:nth-child(5){animation-delay:.20s;}
+.fade-in:nth-child(6){animation-delay:.24s;}
+.fade-in:nth-child(7){animation-delay:.28s;}
+.fade-in:nth-child(8){animation-delay:.32s;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+<div class="hdr">
+  <div class="logo">PRO<span>TRADER</span></div>
+  <div class="live-pill"><div class="dot"></div>LIVE</div>
+  <div class="market-status" id="mktStatus">● CHECKING...</div>
+  <div class="clock" id="clock">--:--:-- IST</div>
+</div>
+</header>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+<div class="ticker-scroll">
+  <div class="ti"><span class="ti-name">NIFTY50</span><span class="ti-val">24,576</span><span class="up">▲ 0.87%</span></div>
+  <div class="ti"><span class="ti-name">GIFT NIFTY</span><span class="ti-val">→ NSE IFSC</span><span class="up">Pre-Market</span></div>
+  <div class="ti"><span class="ti-name">BANKNIFTY</span><span class="ti-val">52,210</span><span class="up">▲ 0.5%</span></div>
+  <div class="ti"><span class="ti-name">INDIA VIX</span><span class="ti-val">13.2</span><span class="dn">▼ Normal</span></div>
+  <div class="ti"><span class="ti-name">CRUDE OIL</span><span class="ti-val">$83.4</span><span class="dn">▼ 0.3%</span></div>
+  <div class="ti"><span class="ti-name">USD/INR</span><span class="ti-val">84.20</span><span class="up">▲ 0.1%</span></div>
+  <div class="ti"><span class="ti-name">PCR RATIO</span><span class="ti-val">→ NSE OC</span><span class="neu">Check</span></div>
+  <div class="ti"><span class="ti-name">GOLD</span><span class="ti-val">₹72,400</span><span class="up">▲ 0.2%</span></div>
+  <!-- duplicate for loop -->
+  <div class="ti"><span class="ti-name">NIFTY50</span><span class="ti-val">24,576</span><span class="up">▲ 0.87%</span></div>
+  <div class="ti"><span class="ti-name">GIFT NIFTY</span><span class="ti-val">→ NSE IFSC</span><span class="up">Pre-Market</span></div>
+  <div class="ti"><span class="ti-name">BANKNIFTY</span><span class="ti-val">52,210</span><span class="up">▲ 0.5%</span></div>
+  <div class="ti"><span class="ti-name">INDIA VIX</span><span class="ti-val">13.2</span><span class="dn">▼ Normal</span></div>
+  <div class="ti"><span class="ti-name">CRUDE OIL</span><span class="ti-val">$83.4</span><span class="dn">▼ 0.3%</span></div>
+  <div class="ti"><span class="ti-name">USD/INR</span><span class="ti-val">84.20</span><span class="up">▲ 0.1%</span></div>
+  <div class="ti"><span class="ti-name">PCR RATIO</span><span class="ti-val">→ NSE OC</span><span class="neu">Check</span></div>
+  <div class="ti"><span class="ti-name">GOLD</span><span class="ti-val">₹72,400</span><span class="up">▲ 0.2%</span></div>
+</div>
+</div>
+
+<!-- TAB NAV -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('framework')">🌅 Morning Framework</button>
+  <button class="tab-btn" onclick="showTab('journal')">📓 Trading Journal</button>
+  <button class="tab-btn" onclick="showTab('calculators')">🧮 Calculators</button>
+  <button class="tab-btn" onclick="showTab('timer')">⏱️ Timer & Alerts</button>
+  <button class="tab-btn" onclick="showTab('sentiment')">🌡️ Sentiment</button>
+  <button class="tab-btn" onclick="showTab('events')">📅 Events Calendar</button>
+  <button class="tab-btn" onclick="showTab('notes')">📋 Quick Notes</button>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-sec">
+    <div class="sidebar-label">NSE Official</div>
+    <a class="nav-a" href="https://www.nseindia.com/option-chain" target="_blank"><span class="nav-icon">⛓️</span>Option Chain</a>
+    <a class="nav-a" href="https://www.nseindia.com/market-data/fii-dii-activity" target="_blank"><span class="nav-icon">🏦</span>FII / DII Data</a>
+    <a class="nav-a" href="https://www.nseindia.com/market-data/india-vix" target="_blank"><span class="nav-icon">⚡</span>India VIX</a>
+    <a class="nav-a" href="https://www.nseindia.com/market-data/pre-open-market-cm-and-emerge-market" target="_blank"><span class="nav-icon">🌅</span>Pre-Open Market</a>
+    <a class="nav-a" href="https://www.nseindia.com/market-data/live-market-indices" target="_blank"><span class="nav-icon">📊</span>Live Indices</a>
+  </div>
+  <div class="sidebar-sec">
+    <div class="sidebar-label">Global Markets</div>
+    <a class="nav-a" href="https://www.nseindia.com/global-market" target="_blank"><span class="nav-icon">🌏</span>GIFT Nifty</a>
+    <a class="nav-a" href="https://finance.yahoo.com/quote/%5EGSPC/" target="_blank"><span class="nav-icon">🇺🇸</span>S&P 500</a>
+    <a class="nav-a" href="https://finance.yahoo.com/quote/%5EIXIC/" target="_blank"><span class="nav-icon">💻</span>Nasdaq</a>
+    <a class="nav-a" href="https://finance.yahoo.com/quote/%5EN225/" target="_blank"><span class="nav-icon">🇯🇵</span>Nikkei 225</a>
+    <a class="nav-a" href="https://finance.yahoo.com/quote/CL=F/" target="_blank"><span class="nav-icon">🛢️</span>Crude Oil</a>
+    <a class="nav-a" href="https://finance.yahoo.com/quote/USDINR=X/" target="_blank"><span class="nav-icon">💱</span>USD / INR</a>
+  </div>
+  <div class="sidebar-sec">
+    <div class="sidebar-label">Analysis Tools</div>
+    <a class="nav-a" href="https://www.tradingview.com/chart/?symbol=NSE:NIFTY" target="_blank"><span class="nav-icon">📉</span>TradingView</a>
+    <a class="nav-a" href="https://sensibull.com/option-chain" target="_blank"><span class="nav-icon">🎯</span>Sensibull</a>
+    <a class="nav-a" href="https://opstra.definedge.com" target="_blank"><span class="nav-icon">🧮</span>Opstra</a>
+    <a class="nav-a" href="https://trendlyne.com" target="_blank"><span class="nav-icon">🔍</span>Trendlyne</a>
+    <a class="nav-a" href="https://chartink.com" target="_blank"><span class="nav-icon">📈</span>ChartInk</a>
+  </div>
+  <div class="sidebar-sec">
+    <div class="sidebar-label">News</div>
+    <a class="nav-a" href="https://economictimes.indiatimes.com/markets" target="_blank"><span class="nav-icon">📰</span>Economic Times</a>
+    <a class="nav-a" href="https://www.moneycontrol.com" target="_blank"><span class="nav-icon">💰</span>Moneycontrol</a>
+    <a class="nav-a" href="https://in.investing.com/economic-calendar/" target="_blank"><span class="nav-icon">📅</span>Eco Calendar</a>
+    <a class="nav-a" href="https://www.livemint.com/market" target="_blank"><span class="nav-icon">🗞️</span>Mint Markets</a>
+  </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="content-area">
+
+<!-- ══ TAB 1: FRAMEWORK ══ -->
+<div id="tab-framework" class="tab-panel active">
+  <div class="sec-hdr"><div class="sec-tag">STEP-BY-STEP</div><div class="sec-title">SUBAH UTHKE YEH KARO</div></div>
+
+  <div class="step-grid">
+    <div class="step-card fade-in" style="--ac:#ffd23f;--ic:rgba(255,210,63,0.1);">
+      <div class="step-num">01</div>
+      <div class="step-hdr"><div class="step-ico">🌙</div><div><div class="step-lbl">GIFT Nifty Dekho</div><div class="step-time">⏰ Raat 10 PM — Subah 9 AM</div></div></div>
+      <div class="step-desc">+100 se zyada = Gap Up open. -100 se zyada = Gap Down. Yeh Nifty ka pre-market barometer hai.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://www.nseindia.com/market-data/live-market-indices" target="_blank">📊 NSE Live Indices<span class="lbadge lb-nse">NSE</span></a>
+        <a class="tlink" href="https://in.investing.com/indices/nse-nifty-50-futures" target="_blank">🌐 Investing.com Nifty Futures<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+    <div class="step-card fade-in" style="--ac:#3b9eff;--ic:rgba(59,158,255,0.1);">
+      <div class="step-num">02</div>
+      <div class="step-hdr"><div class="step-ico">🌏</div><div><div class="step-lbl">Asian Markets Dekho</div><div class="step-time">⏰ Subah 7 AM — 9 AM</div></div></div>
+      <div class="step-desc">Nikkei, Hang Seng, Shanghai — yeh India se pehle open hote hain. Inका trend India pe directly asar karta hai.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://finance.yahoo.com/quote/%5EN225/" target="_blank">🇯🇵 Nikkei 225<span class="lbadge lb-free">FREE</span></a>
+        <a class="tlink" href="https://in.investing.com/indices/major-indices" target="_blank">🌏 All Asian Markets<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+    <div class="step-card fade-in" style="--ac:#a855f7;--ic:rgba(168,85,247,0.1);">
+      <div class="step-num">03</div>
+      <div class="step-hdr"><div class="step-ico">📰</div><div><div class="step-lbl">News & Events</div><div class="step-time">⏰ Subah 8 AM</div></div></div>
+      <div class="step-desc">RBI meeting, quarterly results, budget, US Fed data — koi bada event aaj hai? Market-moving news ka pata lagao.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://in.investing.com/economic-calendar/" target="_blank">📅 Economic Calendar<span class="lbadge lb-free">FREE</span></a>
+        <a class="tlink" href="https://economictimes.indiatimes.com/markets" target="_blank">📰 Economic Times<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+    <div class="step-card fade-in" style="--ac:#00ff88;--ic:rgba(0,255,136,0.1);">
+      <div class="step-num">04</div>
+      <div class="step-hdr"><div class="step-ico">⛓️</div><div><div class="step-lbl">Option Chain Dekho</div><div class="step-time">⏰ Subah 8:30 AM</div></div></div>
+      <div class="step-desc">Max Call OI = Resistance. Max Put OI = Support. PCR ratio dekho. Max Pain identify karo. Din ki range samjho.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://www.nseindia.com/option-chain" target="_blank">⛓️ NSE Option Chain<span class="lbadge lb-nse">NSE</span></a>
+        <a class="tlink" href="https://sensibull.com/option-chain" target="_blank">🎯 Sensibull OC<span class="lbadge lb-free">FREE</span></a>
+        <a class="tlink" href="https://opstra.definedge.com" target="_blank">🧮 Opstra Max Pain<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+    <div class="step-card fade-in" style="--ac:#ff3c5f;--ic:rgba(255,60,95,0.1);">
+      <div class="step-num">05</div>
+      <div class="step-hdr"><div class="step-ico">⚡</div><div><div class="step-lbl">VIX Check Karo</div><div class="step-time">⏰ Subah 9 AM</div></div></div>
+      <div class="step-desc">VIX &lt;13 = Calm. VIX &gt;20 = Fear. VIX &gt;30 = Best buying opportunity! Market ka fear level samjho.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://www.nseindia.com/market-data/india-vix" target="_blank">⚡ NSE India VIX<span class="lbadge lb-nse">NSE</span></a>
+        <a class="tlink" href="https://trendlyne.com/futures/market-pulse/india-vix/" target="_blank">📊 Trendlyne VIX Chart<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+    <div class="step-card fade-in" style="--ac:#00c96a;--ic:rgba(0,201,106,0.1);">
+      <div class="step-num">06</div>
+      <div class="step-hdr"><div class="step-ico">🏦</div><div><div class="step-lbl">FII / DII Activity</div><div class="step-time">⏰ Subah 9 AM (prev day)</div></div></div>
+      <div class="step-desc">FII Buy + DII Buy = Strong Rally. FII Sell + DII Buy = Stable. FII Sell + DII Sell = Crash possible.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://www.nseindia.com/market-data/fii-dii-activity" target="_blank">🏦 NSE FII/DII<span class="lbadge lb-nse">NSE</span></a>
+        <a class="tlink" href="https://trendlyne.com/macro/fii-dii/" target="_blank">📈 Trendlyne FII/DII<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+    <div class="step-card fade-in" style="--ac:#ffd23f;--ic:rgba(255,210,63,0.1);">
+      <div class="step-num">07</div>
+      <div class="step-hdr"><div class="step-ico">📉</div><div><div class="step-lbl">Chart Analysis</div><div class="step-time">⏰ 9:00 AM — 9:15 AM</div></div></div>
+      <div class="step-desc">RSI check, Support/Resistance note, 200 EMA ke upar ya neeche? Trend confirm karo. Position size decide karo.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://www.tradingview.com/chart/?symbol=NSE:NIFTY" target="_blank">📉 TradingView Nifty<span class="lbadge lb-free">FREE</span></a>
+        <a class="tlink" href="https://chartink.com" target="_blank">🔍 ChartInk Scans<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+    <div class="step-card fade-in" style="--ac:#3b9eff;--ic:rgba(59,158,255,0.1);">
+      <div class="step-num">08</div>
+      <div class="step-hdr"><div class="step-ico">⏳</div><div><div class="step-lbl">9:30 Tak WAIT Karo!</div><div class="step-time">⏰ 9:15 — 9:30 AM</div></div></div>
+      <div class="step-desc">🚫 Pehli 15 min TRADE MAT KARO! Sabse volatile time. 9:30 ke baad pehli candle dekho, direction confirm hone do.</div>
+      <div class="step-links">
+        <a class="tlink" href="https://www.tradingview.com/chart/?symbol=NSE:NIFTY&interval=15" target="_blank">🕯️ 15-Min Chart TradingView<span class="lbadge lb-free">FREE</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="cl-progress">
+      <div class="cl-meta"><span>SUBAH KA CHECKLIST</span><span id="cl-count">0 / 12</span></div>
+      <div class="cl-bar-wrap"><div class="cl-bar" id="cl-bar" style="width:0%"></div></div>
+    </div>
+    <div class="cl-grid" id="checklist">
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">🌙 GIFT Nifty check kiya</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">🌏 Asian markets dekhe</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">📰 Aaj ki news padhi</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">📅 Economic calendar dekha</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">⛓️ Option chain dekhi</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">🧮 Max Pain identify kiya</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">⚡ VIX level note kiya</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">🏦 FII/DII data dekha</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">📉 Chart & RSI check kiya</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">⏳ 9:30 tak wait kiya</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">🎯 Stop Loss set kiya</div></div>
+      <div class="ci" onclick="toggleCheck(this)"><div class="cb"></div><div class="ct">💡 Trade plan ready hai</div></div>
+    </div>
+    <div style="margin-top:10px;text-align:right;">
+      <button class="btn btn-ghost btn-sm" onclick="resetChecklist()">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- GOLDEN RULES -->
+  <div class="rules-box">
+    <div class="rules-title">⚠️ PRO TRADER KE GOLDEN RULES</div>
+    <div class="rules-grid">
+      <div class="rule-item"><span class="rule-num">01</span>Koi bhi indicator 100% sahi nahi — probability game hai</div>
+      <div class="rule-item"><span class="rule-num">02</span>Hamesha Stop Loss lagao — ek trade kabhi sab kuch nahi</div>
+      <div class="rule-item"><span class="rule-num">03</span>Ek trade mein max 1-2% capital risk karo</div>
+      <div class="rule-item"><span class="rule-num">04</span>2-3 indicators confirm karein tab trade karo</div>
+      <div class="rule-item"><span class="rule-num">05</span>Market ke against mat jao — trend is your friend</div>
+      <div class="rule-item"><span class="rule-num">06</span>Expiry week mein extra careful raho</div>
+      <div class="rule-item"><span class="rule-num">07</span>Loss ke baad revenge trade mat lo</div>
+      <div class="rule-item"><span class="rule-num">08</span>Profit mein bhi greed mat karo — plan follow karo</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 2: JOURNAL ══ -->
+<div id="tab-journal" class="tab-panel">
+  <div class="sec-hdr"><div class="sec-tag">TRACK KARO</div><div class="sec-title">TRADING JOURNAL</div></div>
+
+  <div class="stats-row" id="journal-stats">
+    <div class="stat-box"><div class="stat-val" id="stat-trades" style="color:var(--blue)">0</div><div class="stat-lbl">TOTAL TRADES</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-wins" style="color:var(--green)">0</div><div class="stat-lbl">WINS</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-losses" style="color:var(--red)">0</div><div class="stat-lbl">LOSSES</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-pnl" style="color:var(--green)">₹0</div><div class="stat-lbl">NET P&L</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title"><div class="card-title-bar" style="background:var(--green)"></div>New Trade Add Karo</div>
+    <div class="journal-form">
+      <div class="inp-group"><label class="inp-label">DATE</label><input class="inp" type="date" id="j-date"></div>
+      <div class="inp-group"><label class="inp-label">INSTRUMENT</label><input class="inp" type="text" id="j-instrument" placeholder="NIFTY 24500 CE"></div>
+      <div class="inp-group"><label class="inp-label">BUY / SELL</label>
+        <select class="inp" id="j-type"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
+      <div class="inp-group"><label class="inp-label">ENTRY PRICE (₹)</label><input class="inp" type="number" id="j-entry" placeholder="0"></div>
+      <div class="inp-group"><label class="inp-label">EXIT PRICE (₹)</label><input class="inp" type="number" id="j-exit" placeholder="0"></div>
+      <div class="inp-group"><label class="inp-label">QUANTITY / LOTS</label><input class="inp" type="number" id="j-qty" placeholder="1"></div>
+      <div class="inp-group full"><label class="inp-label">NOTES / REASON</label><input class="inp" type="text" id="j-notes" placeholder="Kyun trade liya? Strategy kya thi?"></div>
+    </div>
+    <button class="btn btn-green" onclick="addTrade()">+ Trade Add Karo</button>
+    <button class="btn btn-ghost" style="margin-left:8px;" onclick="exportJournal()">⬇ Export CSV</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="card-title-bar" style="background:var(--blue)"></div>Trade History</div>
+    <div style="overflow-x:auto;">
+      <table class="trade-table" id="trade-table">
+        <thead><tr><th>DATE</th><th>INSTRUMENT</th><th>TYPE</th><th>ENTRY</th><th>EXIT</th><th>QTY</th><th>P&L</th><th>STATUS</th><th>NOTES</th><th></th></tr></thead>
+        <tbody id="trade-tbody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted);">Abhi koi trade nahi hai. Pehla trade add karo! 🚀</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 3: CALCULATORS ══ -->
+<div id="tab-calculators" class="tab-panel">
+  <div class="sec-hdr"><div class="sec-tag">TOOLS</div><div class="sec-title">CALCULATORS</div></div>
+
+  <div class="inner-tabs">
+    <button class="it-btn active" onclick="showCalc('pl')">💰 P&L Calculator</button>
+    <button class="it-btn" onclick="showCalc('pos')">📐 Position Size</button>
+    <button class="it-btn" onclick="showCalc('rr')">📊 Risk:Reward</button>
+    <button class="it-btn" onclick="showCalc('sr')">🎯 Support/Resistance</button>
+  </div>
+
+  <!-- P&L CALC -->
+  <div id="calc-pl" class="it-panel active">
+    <div class="g2">
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--green)"></div>Futures / Options P&L</div>
+        <div class="inp-group"><label class="inp-label">INSTRUMENT TYPE</label>
+          <select class="inp" id="pl-type" onchange="updateLotSize()">
+            <option value="75">NIFTY (Lot: 75)</option>
+            <option value="30">BANKNIFTY (Lot: 30)</option>
+            <option value="25">FINNIFTY (Lot: 25)</option>
+            <option value="custom">CUSTOM LOT SIZE</option>
+          </select></div>
+        <div class="inp-row">
+          <div class="inp-group"><label class="inp-label">LOT SIZE</label><input class="inp" type="number" id="pl-lot" value="75" placeholder="75"></div>
+          <div class="inp-group"><label class="inp-label">NUMBER OF LOTS</label><input class="inp" type="number" id="pl-num" value="1" placeholder="1"></div>
+        </div>
+        <div class="inp-row">
+          <div class="inp-group"><label class="inp-label">ENTRY PRICE (₹)</label><input class="inp" type="number" id="pl-entry" placeholder="22000" oninput="calcPL()"></div>
+          <div class="inp-group"><label class="inp-label">EXIT PRICE (₹)</label><input class="inp" type="number" id="pl-exit" placeholder="22200" oninput="calcPL()"></div>
+        </div>
+        <div class="inp-row">
+          <div class="inp-group"><label class="inp-label">BROKERAGE (₹)</label><input class="inp" type="number" id="pl-brok" value="40" oninput="calcPL()"></div>
+          <div class="inp-group"><label class="inp-label">POSITION</label>
+            <select class="inp" id="pl-pos" onchange="calcPL()"><option value="1">LONG (Buy)</option><option value="-1">SHORT (Sell)</option></select></div>
+        </div>
+        <div id="pl-result" style="display:none;" class="result-box">
+          <div class="big-result" id="pl-main">₹0</div>
+          <div class="result-row"><span class="result-key">Gross P&L</span><span class="result-val" id="pl-gross">₹0</span></div>
+          <div class="result-row"><span class="result-key">Brokerage + Taxes (~)</span><span class="result-val" id="pl-charges">₹0</span></div>
+          <div class="result-row"><span class="result-key">Net P&L</span><span class="result-val" id="pl-net">₹0</span></div>
+          <div class="result-row"><span class="result-key">Per Point Move</span><span class="result-val" id="pl-perpoint">₹0</span></div>
+        </div>
+        <button class="btn btn-green" style="margin-top:12px;" onclick="calcPL()">Calculate P&L</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--blue)"></div>Formula Yaad Karo</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);border-radius:8px;padding:12px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:4px;">FUTURES P&L</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green);">(Exit - Entry) × Lot Size × Lots</div>
+          </div>
+          <div style="background:rgba(59,158,255,0.06);border:1px solid rgba(59,158,255,0.15);border-radius:8px;padding:12px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:4px;">OPTIONS BUYER P&L</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--blue);">(Exit Premium - Entry Premium) × Lot Size</div>
+          </div>
+          <div style="background:rgba(255,210,63,0.06);border:1px solid rgba(255,210,63,0.15);border-radius:8px;padding:12px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:4px;">MAX LOSS (Option Buyer)</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--yellow);">Premium Paid × Lot Size (Total)</div>
+          </div>
+          <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:12px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:4px;">BREAK-EVEN (Call)</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--purple);">Strike Price + Premium Paid</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POSITION SIZE CALC -->
+  <div id="calc-pos" class="it-panel">
+    <div class="g2">
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--yellow)"></div>Position Size Calculator</div>
+        <div class="inp-group"><label class="inp-label">TOTAL CAPITAL (₹)</label><input class="inp" type="number" id="ps-capital" placeholder="500000" oninput="calcPosition()"></div>
+        <div class="inp-group"><label class="inp-label">RISK PER TRADE (%)</label>
+          <select class="inp" id="ps-risk" onchange="calcPosition()">
+            <option value="0.5">0.5% — Conservative</option>
+            <option value="1" selected>1% — Standard</option>
+            <option value="2">2% — Aggressive</option>
+            <option value="custom">Custom %</option>
+          </select></div>
+        <div class="inp-group"><label class="inp-label">CUSTOM RISK %</label><input class="inp" type="number" id="ps-custom-risk" placeholder="1.5" oninput="calcPosition()"></div>
+        <div class="inp-row">
+          <div class="inp-group"><label class="inp-label">ENTRY PRICE (₹)</label><input class="inp" type="number" id="ps-entry" placeholder="22000" oninput="calcPosition()"></div>
+          <div class="inp-group"><label class="inp-label">STOP LOSS (₹)</label><input class="inp" type="number" id="ps-sl" placeholder="21900" oninput="calcPosition()"></div>
+        </div>
+        <div class="inp-group"><label class="inp-label">LOT SIZE (Nifty=75, BankNifty=30)</label><input class="inp" type="number" id="ps-lotsize" placeholder="75" oninput="calcPosition()"></div>
+        <div class="pos-result-grid" id="pos-result" style="display:none;">
+          <div class="pos-res"><div class="pos-res-val" id="ps-amt" style="color:var(--yellow)">₹0</div><div class="pos-res-lbl">MAX RISK AMOUNT</div></div>
+          <div class="pos-res"><div class="pos-res-val" id="ps-units" style="color:var(--green)">0</div><div class="pos-res-lbl">UNITS TO BUY</div></div>
+          <div class="pos-res"><div class="pos-res-val" id="ps-lots" style="color:var(--blue)">0</div><div class="pos-res-lbl">LOTS (Approx)</div></div>
+          <div class="pos-res"><div class="pos-res-val" id="ps-slpts" style="color:var(--red)">0</div><div class="pos-res-lbl">SL POINTS</div></div>
+        </div>
+        <button class="btn btn-green" style="margin-top:12px;" onclick="calcPosition()">Calculate Position Size</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--yellow)"></div>Position Sizing Rule</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+          <p style="margin-bottom:10px;">Pro traders kabhi bhi ek trade mein <span style="color:var(--yellow);font-weight:700;">2% se zyada risk</span> nahi lete.</p>
+          <p style="margin-bottom:10px;"><span style="color:var(--green);font-weight:700;">Formula:</span></p>
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green);line-height:2;">
+            Max Risk = Capital × Risk%<br>
+            SL Points = Entry - Stop Loss<br>
+            Units = Max Risk ÷ SL Points<br>
+            Lots = Units ÷ Lot Size
+          </div>
+          <p style="margin-top:10px;color:var(--red);font-size:12px;">⚠️ Agar Capital ₹1L hai toh ek trade mein sirf ₹1000-2000 risk karo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RISK:REWARD CALC -->
+  <div id="calc-rr" class="it-panel">
+    <div class="g2">
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--purple)"></div>Risk : Reward Calculator</div>
+        <div class="inp-row">
+          <div class="inp-group"><label class="inp-label">ENTRY PRICE (₹)</label><input class="inp" type="number" id="rr-entry" placeholder="22000" oninput="calcRR()"></div>
+          <div class="inp-group"><label class="inp-label">STOP LOSS (₹)</label><input class="inp" type="number" id="rr-sl" placeholder="21900" oninput="calcRR()"></div>
+        </div>
+        <div class="inp-group"><label class="inp-label">TARGET PRICE (₹)</label><input class="inp" type="number" id="rr-target" placeholder="22300" oninput="calcRR()"></div>
+        <div id="rr-result" style="display:none;">
+          <div class="rr-visual">
+            <div class="rr-risk" id="rr-risk-bar" style="flex:1;">RISK</div>
+            <div class="rr-reward" id="rr-reward-bar" style="flex:1;">REWARD</div>
+          </div>
+          <div class="result-box blue-box">
+            <div class="big-result" id="rr-ratio" style="color:var(--purple);">1:0</div>
+            <div class="result-row"><span class="result-key">Risk (Points)</span><span class="result-val" id="rr-risk-pts">0</span></div>
+            <div class="result-row"><span class="result-key">Reward (Points)</span><span class="result-val" id="rr-reward-pts">0</span></div>
+            <div class="result-row"><span class="result-key">RR Rating</span><span class="result-val" id="rr-rating">-</span></div>
+          </div>
+        </div>
+        <button class="btn btn-blue" style="margin-top:12px;" onclick="calcRR()">Calculate RR Ratio</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--purple)"></div>RR Ratio Guide</div>
+        <table class="ntable">
+          <tr><th>RR RATIO</th><th>RATING</th><th>MATLAB</th></tr>
+          <tr><td>1:1</td><td><span class="bear">❌ Poor</span></td><td>Risk ke barabar reward</td></tr>
+          <tr><td>1:1.5</td><td><span class="neut">⚠️ OK</span></td><td>Minimum acceptable</td></tr>
+          <tr><td>1:2</td><td><span class="bull">✅ Good</span></td><td>Standard pro trade</td></tr>
+          <tr><td>1:3</td><td><span class="bull">🔥 Great</span></td><td>Excellent trade setup</td></tr>
+          <tr><td>1:4+</td><td><span class="bull">🚀 Elite</span></td><td>Best possible setup</td></tr>
+        </table>
+        <div style="margin-top:12px;padding:10px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.15);border-radius:7px;font-size:12px;color:var(--muted);">
+          💡 Agar RR 1:2 hai aur aap sirf 50% trades bhi jeet lo, toh bhi overall profitable rahoge!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPPORT/RESISTANCE CALC -->
+  <div id="calc-sr" class="it-panel">
+    <div class="g2">
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--orange)"></div>Pivot Point Calculator</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Previous day ka High, Low, Close dalo — aaj ke Support/Resistance auto calculate honge.</div>
+        <div class="inp-row">
+          <div class="inp-group"><label class="inp-label">PREVIOUS HIGH (₹)</label><input class="inp" type="number" id="sr-high" placeholder="22500" oninput="calcSR()"></div>
+          <div class="inp-group"><label class="inp-label">PREVIOUS LOW (₹)</label><input class="inp" type="number" id="sr-low" placeholder="22100" oninput="calcSR()"></div>
+        </div>
+        <div class="inp-group"><label class="inp-label">PREVIOUS CLOSE (₹)</label><input class="inp" type="number" id="sr-close" placeholder="22350" oninput="calcSR()"></div>
+        <div class="inp-group"><label class="inp-label">PIVOT METHOD</label>
+          <select class="inp" id="sr-method" onchange="calcSR()">
+            <option value="standard">Standard Pivot</option>
+            <option value="camarilla">Camarilla</option>
+          </select></div>
+        <div id="sr-result" style="display:none;" class="sr-result">
+          <div class="sr-level sr-r"><span class="sr-tag" style="color:var(--red)">R3</span><span class="sr-val" id="sr-r3">-</span><span class="sr-desc">Strong Resistance 3</span></div>
+          <div class="sr-level sr-r"><span class="sr-tag" style="color:var(--red)">R2</span><span class="sr-val" id="sr-r2">-</span><span class="sr-desc">Resistance 2</span></div>
+          <div class="sr-level sr-r"><span class="sr-tag" style="color:var(--red)">R1</span><span class="sr-val" id="sr-r1">-</span><span class="sr-desc">Resistance 1</span></div>
+          <div class="sr-level sr-pivot"><span class="sr-tag" style="color:var(--yellow)">PP</span><span class="sr-val" id="sr-pivot">-</span><span class="sr-desc">Pivot Point (Key Level)</span></div>
+          <div class="sr-level sr-s"><span class="sr-tag" style="color:var(--green)">S1</span><span class="sr-val" id="sr-s1">-</span><span class="sr-desc">Support 1</span></div>
+          <div class="sr-level sr-s"><span class="sr-tag" style="color:var(--green)">S2</span><span class="sr-val" id="sr-s2">-</span><span class="sr-desc">Support 2</span></div>
+          <div class="sr-level sr-s"><span class="sr-tag" style="color:var(--green)">S3</span><span class="sr-val" id="sr-s3">-</span><span class="sr-desc">Strong Support 3</span></div>
+        </div>
+        <button class="btn btn-green" style="margin-top:12px;" onclick="calcSR()">Calculate Levels</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--orange)"></div>Pivot Points Use Kaise Karein</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted);line-height:1.6;">
+          <div style="padding:10px;background:rgba(255,140,66,0.07);border:1px solid rgba(255,140,66,0.15);border-radius:7px;">📌 <span style="color:var(--text);font-weight:600;">Pivot Point (PP)</span> = Din ka most important level. PP ke upar = Bullish bias, PP ke neeche = Bearish bias.</div>
+          <div style="padding:10px;background:rgba(255,60,95,0.07);border:1px solid rgba(255,60,95,0.15);border-radius:7px;">📌 <span style="color:var(--red);font-weight:600;">R1, R2, R3</span> = Intraday resistance levels. Yahan se price wapas aa sakti hai. Short entry ke liye dekhو.</div>
+          <div style="padding:10px;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.15);border-radius:7px;">📌 <span style="color:var(--green);font-weight:600;">S1, S2, S3</span> = Intraday support levels. Yahan se bounce ho sakta hai. Long entry ke liye dekho.</div>
+          <div style="padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:7px;">💡 Pro tip: Jab price R1 todta hai toh R2 target banta hai. S1 toota toh S2 target.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 4: TIMER ══ -->
+<div id="tab-timer" class="tab-panel">
+  <div class="sec-hdr"><div class="sec-tag">ALERTS</div><div class="sec-title">TRADE TIMER & SESSION ALERTS</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title"><div class="card-title-bar" style="background:var(--green)"></div>Live IST Clock</div>
+      <div class="timer-display" id="big-clock">00:00:00</div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:6px;" id="session-info">Market status checking...</div>
+      <div style="margin-top:16px;">
+        <div class="card-title" style="margin-bottom:10px;"><div class="card-title-bar" style="background:var(--blue)"></div>Countdown Timer</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:40px;text-align:center;color:var(--blue);letter-spacing:3px;" id="countdown">00:00</div>
+        <div style="display:flex;gap:8px;margin-top:10px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="startCountdown(5)">5 Min</button>
+          <button class="btn btn-ghost btn-sm" onclick="startCountdown(15)">15 Min</button>
+          <button class="btn btn-ghost btn-sm" onclick="startCountdown(30)">30 Min</button>
+          <button class="btn btn-red btn-sm" onclick="stopCountdown()">Stop</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-bar" style="background:var(--yellow)"></div>Market Sessions</div>
+      <div class="session-grid">
+        <div class="session-card" id="sess-preopen"><div class="session-name">🌅 Pre-Open</div><div class="session-time">9:00 – 9:15 AM</div></div>
+        <div class="session-card" id="sess-opening"><div class="session-name">🔔 Opening</div><div class="session-time">9:15 – 9:30 AM</div></div>
+        <div class="session-card" id="sess-morning"><div class="session-name">🌞 Morning</div><div class="session-time">9:30 – 11:30 AM</div></div>
+        <div class="session-card" id="sess-midday"><div class="session-name">☀️ Midday</div><div class="session-time">11:30 – 1:30 PM</div></div>
+        <div class="session-card" id="sess-afternoon"><div class="session-name">🌆 Afternoon</div><div class="session-time">1:30 – 3:00 PM</div></div>
+        <div class="session-card" id="sess-close"><div class="session-name">🔒 Close</div><div class="session-time">3:00 – 3:30 PM</div></div>
+      </div>
+      <div class="card-title" style="margin-bottom:10px;"><div class="card-title-bar" style="background:var(--orange)"></div>Today's Alerts</div>
+      <div class="alert-list">
+        <div class="alert-item"><div class="alert-dot alert-pending"></div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">9:00 AM — Pre-Open Market</div><div style="font-size:11px;color:var(--muted);">Pre-open orders start hote hain</div></div></div>
+        <div class="alert-item"><div class="alert-dot alert-pending"></div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">9:15 AM — Market Opens 🔔</div><div style="font-size:11px;color:var(--muted);">Opening candle dekho, trade mat karo abhi</div></div></div>
+        <div class="alert-item"><div class="alert-dot alert-pending"></div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">9:30 AM — Trading Start ✅</div><div style="font-size:11px;color:var(--muted);">Direction confirm hone ke baad trade lo</div></div></div>
+        <div class="alert-item"><div class="alert-dot alert-pending"></div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">11:30 AM — Slow Phase ⚠️</div><div style="font-size:11px;color:var(--muted);">Choppy market — avoid karo ya reduce karo</div></div></div>
+        <div class="alert-item"><div class="alert-dot alert-pending"></div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">1:30 PM — Active Again ✅</div><div style="font-size:11px;color:var(--muted);">Afternoon session — trade kar sakte ho</div></div></div>
+        <div class="alert-item"><div class="alert-dot alert-pending"></div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">3:00 PM — Closing Phase 🚫</div><div style="font-size:11px;color:var(--muted);">Avoid karo — manipulated moves possible</div></div></div>
+        <div class="alert-item"><div class="alert-dot alert-pending"></div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">3:30 PM — Market Closes 🔒</div><div style="font-size:11px;color:var(--muted);">Sabhi positions square off ho jaati hain</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 5: SENTIMENT ══ -->
+<div id="tab-sentiment" class="tab-panel">
+  <div class="sec-hdr"><div class="sec-tag">MARKET MOOD</div><div class="sec-title">SENTIMENT METER</div></div>
+  <div class="g2">
+    <div class="card" style="text-align:center;">
+      <div class="card-title" style="justify-content:center;"><div class="card-title-bar" style="background:var(--purple)"></div>Overall Market Sentiment</div>
+      <div class="sentiment-meter">
+        <svg class="sentiment-arc" viewBox="0 0 220 120" width="220" height="120">
+          <defs>
+            <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#ff3c5f"/>
+              <stop offset="50%" style="stop-color:#ffd23f"/>
+              <stop offset="100%" style="stop-color:#00ff88"/>
+            </linearGradient>
+          </defs>
+          <path d="M 10 110 A 100 100 0 0 1 210 110" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="20" stroke-linecap="round"/>
+          <path id="sent-arc" d="M 10 110 A 100 100 0 0 1 210 110" fill="none" stroke="url(#arcGrad)" stroke-width="20" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="157"/>
+          <line id="sent-needle" x1="110" y1="110" x2="110" y2="25" stroke="white" stroke-width="2.5" stroke-linecap="round" style="transform-origin:110px 110px;transform:rotate(0deg);transition:transform .8s cubic-bezier(.34,1.56,.64,1);"/>
+          <circle cx="110" cy="110" r="7" fill="white"/>
+        </svg>
+        <div class="sent-labels"><span style="color:var(--red);">FEAR</span><span style="color:var(--muted);">NEUTRAL</span><span style="color:var(--green);">GREED</span></div>
+      </div>
+      <div class="sent-value" id="sent-score" style="color:var(--yellow);">50</div>
+      <div class="sent-tag" id="sent-label">NEUTRAL</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">
+        <button class="btn btn-ghost btn-sm" onclick="setSentiment(10)">Extreme Fear</button>
+        <button class="btn btn-ghost btn-sm" onclick="setSentiment(30)">Fear</button>
+        <button class="btn btn-ghost btn-sm" onclick="setSentiment(50)">Neutral</button>
+        <button class="btn btn-ghost btn-sm" onclick="setSentiment(70)">Greed</button>
+        <button class="btn btn-ghost btn-sm" onclick="setSentiment(90)">Extreme Greed</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-bar" style="background:var(--purple)"></div>Sentiment Factors</div>
+      <div class="sent-factors">
+        <div class="sf">
+          <div class="sf-name">GIFT Nifty Trend</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="sf-bar-wrap" style="flex:1;"><div class="sf-bar" id="sf1" style="width:70%;background:var(--green);"></div></div>
+            <div class="sf-val" id="sf1v" style="color:var(--green);">70</div>
+          </div>
+          <input type="range" min="0" max="100" value="70" style="width:100%;accent-color:var(--green);margin-top:4px;" oninput="updateSF(1,this.value)">
+        </div>
+        <div class="sf">
+          <div class="sf-name">VIX Level</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="sf-bar-wrap" style="flex:1;"><div class="sf-bar" id="sf2" style="width:65%;background:var(--green);"></div></div>
+            <div class="sf-val" id="sf2v" style="color:var(--green);">65</div>
+          </div>
+          <input type="range" min="0" max="100" value="65" style="width:100%;accent-color:var(--green);margin-top:4px;" oninput="updateSF(2,this.value)">
+        </div>
+        <div class="sf">
+          <div class="sf-name">FII Activity</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="sf-bar-wrap" style="flex:1;"><div class="sf-bar" id="sf3" style="width:55%;background:var(--yellow);"></div></div>
+            <div class="sf-val" id="sf3v" style="color:var(--yellow);">55</div>
+          </div>
+          <input type="range" min="0" max="100" value="55" style="width:100%;accent-color:var(--yellow);margin-top:4px;" oninput="updateSF(3,this.value)">
+        </div>
+        <div class="sf">
+          <div class="sf-name">PCR Ratio</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="sf-bar-wrap" style="flex:1;"><div class="sf-bar" id="sf4" style="width:60%;background:var(--yellow);"></div></div>
+            <div class="sf-val" id="sf4v" style="color:var(--yellow);">60</div>
+          </div>
+          <input type="range" min="0" max="100" value="60" style="width:100%;accent-color:var(--yellow);margin-top:4px;" oninput="updateSF(4,this.value)">
+        </div>
+        <div class="sf">
+          <div class="sf-name">Global Cues</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="sf-bar-wrap" style="flex:1;"><div class="sf-bar" id="sf5" style="width:45%;background:var(--yellow);"></div></div>
+            <div class="sf-val" id="sf5v" style="color:var(--yellow);">45</div>
+          </div>
+          <input type="range" min="0" max="100" value="45" style="width:100%;accent-color:var(--yellow);margin-top:4px;" oninput="updateSF(5,this.value)">
+        </div>
+        <div class="sf">
+          <div class="sf-name">News Sentiment</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="sf-bar-wrap" style="flex:1;"><div class="sf-bar" id="sf6" style="width:50%;background:var(--yellow);"></div></div>
+            <div class="sf-val" id="sf6v" style="color:var(--yellow);">50</div>
+          </div>
+          <input type="range" min="0" max="100" value="50" style="width:100%;accent-color:var(--yellow);margin-top:4px;" oninput="updateSF(6,this.value)">
+        </div>
+      </div>
+      <button class="btn btn-green" style="margin-top:14px;width:100%;" onclick="calcSentiment()">Sentiment Calculate Karo</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title"><div class="card-title-bar" style="background:var(--purple)"></div>Sentiment Pe Action Kya Lena Chahiye</div>
+    <table class="ntable">
+      <tr><th>SCORE</th><th>SENTIMENT</th><th>MARKET MATLAB</th><th>ACTION</th></tr>
+      <tr><td>0–20</td><td><span class="bear">Extreme Fear</span></td><td>Sab dar rahe hain, panic selling</td><td><span class="bull">Best Buying Opportunity!</span></td></tr>
+      <tr><td>20–40</td><td><span class="bear">Fear</span></td><td>Negative sentiment, selling pressure</td><td><span class="neut">Cautious buying, small lots</span></td></tr>
+      <tr><td>40–60</td><td><span class="neut">Neutral</span></td><td>Balanced market, no strong bias</td><td><span class="neut">Trend follow karo</span></td></tr>
+      <tr><td>60–80</td><td><span class="bull">Greed</span></td><td>Positive, buying pressure</td><td><span class="neut">Hold, but SL tight rakhو</span></td></tr>
+      <tr><td>80–100</td><td><span class="bull">Extreme Greed</span></td><td>Sab lob mein hain, euphoria</td><td><span class="bear">Careful! Correction aa sakta hai</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══ TAB 6: EVENTS ══ -->
+<div id="tab-events" class="tab-panel">
+  <div class="sec-hdr"><div class="sec-tag">CALENDAR</div><div class="sec-title">EARNINGS & EVENTS</div></div>
+  <div class="g2">
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--blue)"></div>Upcoming Market Events</div>
+        <div class="events-list">
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">23</div><div class="event-month">APR</div></div>
+            <div class="event-body"><div class="event-name">RBI Monetary Policy Meeting <span class="imp-badge imp-high">HIGH</span></div><div class="event-meta">Interest rate decision — Market pe bada asar hoga</div></div>
+          </div>
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">24</div><div class="event-month">APR</div></div>
+            <div class="event-body"><div class="event-name">TCS Q4 Results <span class="imp-badge imp-high">HIGH</span></div><div class="event-meta">IT sector pe sentiment asar karega</div></div>
+          </div>
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">25</div><div class="event-month">APR</div></div>
+            <div class="event-body"><div class="event-name">US GDP Data <span class="imp-badge imp-high">HIGH</span></div><div class="event-meta">Global market trigger — India pe indirect asar</div></div>
+          </div>
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">25</div><div class="event-month">APR</div></div>
+            <div class="event-body"><div class="event-name">NIFTY Monthly Expiry <span class="imp-badge imp-med">MED</span></div><div class="event-meta">Extra volatility — careful trading zaruri</div></div>
+          </div>
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">28</div><div class="event-month">APR</div></div>
+            <div class="event-body"><div class="event-name">Reliance Q4 Results <span class="imp-badge imp-high">HIGH</span></div><div class="event-meta">Nifty heavyweight — index pe asar</div></div>
+          </div>
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">30</div><div class="event-month">APR</div></div>
+            <div class="event-body"><div class="event-name">India GDP Data <span class="imp-badge imp-high">HIGH</span></div><div class="event-meta">Quarterly economic growth data</div></div>
+          </div>
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">02</div><div class="event-month">MAY</div></div>
+            <div class="event-body"><div class="event-name">US Fed Meeting Decision <span class="imp-badge imp-high">HIGH</span></div><div class="event-meta">Rate decision — global markets hil sakte hain</div></div>
+          </div>
+          <div class="event-item">
+            <div class="event-date"><div class="event-day">05</div><div class="event-month">MAY</div></div>
+            <div class="event-body"><div class="event-name">HDFC Bank Q4 Results <span class="imp-badge imp-med">MED</span></div><div class="event-meta">Banking sector sentiment</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--orange)"></div>Event Pe Trade Kaise Karein</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12px;color:var(--muted);">
+          <div style="padding:10px;background:rgba(255,60,95,0.07);border:1px solid rgba(255,60,95,0.12);border-radius:7px;"><span style="color:var(--red);font-weight:700;">⚠️ Event se pehle</span><br>Market ka "expectation" samjho. Agar sab bullish soch rahe hain aur result average aaya, toh bhi market gir sakta hai ("buy the rumor, sell the news").</div>
+          <div style="padding:10px;background:rgba(255,210,63,0.07);border:1px solid rgba(255,210,63,0.12);border-radius:7px;"><span style="color:var(--yellow);font-weight:700;">📌 Event ke din</span><br>Size chhoti rakho. High volatility mein bade lots dangerous hote hain. Stop loss zaroori hai.</div>
+          <div style="padding:10px;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.12);border-radius:7px;"><span style="color:var(--green);font-weight:700;">✅ Event ke baad</span><br>Direction confirm hone ke baad trade lo. Pehle dust settle hone do.</div>
+          <div style="padding:10px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.12);border-radius:7px;"><span style="color:var(--purple);font-weight:700;">💡 Expiry week</span><br>Option buyers ke liye risky. Theta decay bahut fast hota hai. Sellers ka advantage hota hai.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="card-title-bar" style="background:var(--blue)"></div>Live Events Check Karo</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <a class="tlink" href="https://in.investing.com/economic-calendar/" target="_blank">📅 Investing.com Economic Calendar<span class="lbadge lb-free">FREE</span></a>
+          <a class="tlink" href="https://www.nseindia.com/companies-listing/corporate-filings-financial-results" target="_blank">📊 NSE Corporate Results Calendar<span class="lbadge lb-nse">NSE</span></a>
+          <a class="tlink" href="https://www.moneycontrol.com/markets/earnings/" target="_blank">💰 Moneycontrol Earnings Calendar<span class="lbadge lb-free">FREE</span></a>
+          <a class="tlink" href="https://trendlyne.com/research-reports/earnings-calendar/" target="_blank">🔍 Trendlyne Earnings<span class="lbadge lb-free">FREE</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 7: NOTES ══ -->
+<div id="tab-notes" class="tab-panel">
+  <div class="sec-hdr"><div class="sec-tag">REFERENCE</div><div class="sec-title">QUICK NOTES</div></div>
+  <div class="g2" style="margin-bottom:14px;">
+    <div class="card"><div class="card-title"><div class="card-title-bar" style="background:var(--blue)"></div>PCR Ratio Guide</div>
+      <table class="ntable"><tr><th>PCR</th><th>SIGNAL</th><th>MATLAB</th></tr>
+      <tr><td>>1.3</td><td><span class="bull">BULLISH ↑</span></td><td>Bahut zyada puts — contrarian buy</td></tr>
+      <tr><td>1.0–1.3</td><td><span class="bull">Mild Bullish</span></td><td>Balanced, puts thodi zyada</td></tr>
+      <tr><td>0.8–1.0</td><td><span class="neut">SIDEWAYS</span></td><td>Equal calls/puts</td></tr>
+      <tr><td>0.5–0.8</td><td><span class="bear">Mild Bearish</span></td><td>Zyada calls hain</td></tr>
+      <tr><td><0.5</td><td><span class="bear">BEARISH ↓</span></td><td>Bahut zyada calls — contrarian sell</td></tr></table>
+    </div>
+    <div class="card"><div class="card-title"><div class="card-title-bar" style="background:var(--red)"></div>VIX Guide</div>
+      <div class="vix-row"><div class="vix-lbl">&lt;11</div><div class="vix-wrap"><div class="vix-fill" style="width:20%;background:rgba(255,210,63,.6);color:#080c14;">Complacency</div></div><div class="vix-act">⚠️ Be careful</div></div>
+      <div class="vix-row"><div class="vix-lbl">11–15</div><div class="vix-wrap"><div class="vix-fill" style="width:38%;background:rgba(0,255,136,.7);color:#080c14;">Normal ✅</div></div><div class="vix-act">✅ Trade freely</div></div>
+      <div class="vix-row"><div class="vix-lbl">15–20</div><div class="vix-wrap"><div class="vix-fill" style="width:52%;background:rgba(255,180,50,.7);color:#080c14;">Mild Fear</div></div><div class="vix-act">🟡 Cautious</div></div>
+      <div class="vix-row"><div class="vix-lbl">20–30</div><div class="vix-wrap"><div class="vix-fill" style="width:70%;background:rgba(255,100,50,.7);color:#080c14;">Fear Zone</div></div><div class="vix-act">🔴 Reduce size</div></div>
+      <div class="vix-row"><div class="vix-lbl">&gt;30</div><div class="vix-wrap"><div class="vix-fill" style="width:100%;background:rgba(255,60,95,.8);color:#fff;">PANIC — BUY!</div></div><div class="vix-act">🟢 Best entry!</div></div>
+    </div>
+    <div class="card"><div class="card-title"><div class="card-title-bar" style="background:var(--purple)"></div>FII + DII Combinations</div>
+      <table class="ntable"><tr><th>FII</th><th>DII</th><th>MARKET</th></tr>
+      <tr><td><span class="bull">BUY</span></td><td><span class="bull">BUY</span></td><td><span class="bull">🚀 Strong Rally</span></td></tr>
+      <tr><td><span class="bull">BUY</span></td><td><span class="bear">SELL</span></td><td><span class="bull">📈 Upward</span></td></tr>
+      <tr><td><span class="bear">SELL</span></td><td><span class="bull">BUY</span></td><td><span class="neut">➡️ Stable</span></td></tr>
+      <tr><td><span class="bear">SELL</span></td><td><span class="bear">SELL</span></td><td><span class="bear">💥 Crash Risk</span></td></tr></table>
+    </div>
+    <div class="card"><div class="card-title"><div class="card-title-bar" style="background:var(--green)"></div>RSI Guide</div>
+      <table class="ntable"><tr><th>RSI</th><th>ZONE</th><th>ACTION</th></tr>
+      <tr><td>>70</td><td><span class="bear">Overbought</span></td><td>Sell ki tayyari</td></tr>
+      <tr><td>50–70</td><td><span class="bull">Bullish</span></td><td>Hold / Buy</td></tr>
+      <tr><td>30–50</td><td><span class="bear">Bearish</span></td><td>Caution</td></tr>
+      <tr><td><30</td><td><span class="bull">Oversold</span></td><td>Buy ki tayyari</td></tr></table>
+    </div>
+    <div class="card"><div class="card-title"><div class="card-title-bar" style="background:var(--yellow)"></div>Best Trading Time</div>
+      <table class="ntable"><tr><th>TIME</th><th>SESSION</th><th>TRADE?</th></tr>
+      <tr><td>9:15–9:30</td><td>Volatile Open</td><td><span class="bear">🚫 Avoid</span></td></tr>
+      <tr><td>9:30–11:30</td><td>Morning</td><td><span class="bull">✅ Best</span></td></tr>
+      <tr><td>11:30–1:30</td><td>Midday Slow</td><td><span class="neut">⚠️ Caution</span></td></tr>
+      <tr><td>1:30–3:00</td><td>Afternoon</td><td><span class="bull">✅ Good</span></td></tr>
+      <tr><td>3:00–3:30</td><td>Close</td><td><span class="bear">🚫 Avoid</span></td></tr></table>
+    </div>
+    <div class="card"><div class="card-title"><div class="card-title-bar" style="background:var(--orange)"></div>Crude Oil & USD/INR Impact</div>
+      <table class="ntable"><tr><th>FACTOR</th><th>UPAR ↑</th><th>NEECHE ↓</th></tr>
+      <tr><td>Crude Oil</td><td><span class="bear">Market ↓</span></td><td><span class="bull">Market ↑</span></td></tr>
+      <tr><td>USD/INR</td><td><span class="bear">IT stocks ↑, others ↓</span></td><td><span class="bull">Imports saste</span></td></tr>
+      <tr><td>Gold</td><td><span class="neut">Safe haven demand</span></td><td><span class="neut">Risk-on mood</span></td></tr>
+      <tr><td>US Markets</td><td><span class="bull">India ↑</span></td><td><span class="bear">India ↓</span></td></tr></table>
+    </div>
+  </div>
+
+  <!-- My Notes -->
+  <div class="card">
+    <div class="card-title"><div class="card-title-bar" style="background:var(--green)"></div>Meri Personal Notes</div>
+    <textarea id="my-notes" class="inp" style="width:100%;height:160px;resize:vertical;font-family:'Rajdhani',sans-serif;font-size:14px;" placeholder="Yahan apni observations, trade ideas, ya koi bhi cheez likho...&#10;&#10;Example:&#10;- Aaj Nifty 22,000 support strong lag raha hai&#10;- VIX high hai, size chhoti rakhna hai&#10;- RBI meeting kal hai — avoid karna hai" oninput="saveNotes()"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">Auto-saved ✓</div>
+      <button class="btn btn-ghost btn-sm" onclick="clearNotes()">Clear Notes</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /layout -->
+
+<script>
+// ── CLOCK & MARKET STATUS ──
+function updateClock() {
+  const ist = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Kolkata"}));
+  const h=String(ist.getHours()).padStart(2,'0'),m=String(ist.getMinutes()).padStart(2,'0'),s=String(ist.getSeconds()).padStart(2,'0');
+  const timeStr = `${h}:${m}:${s} IST`;
+  document.getElementById('clock').textContent = timeStr;
+  document.getElementById('big-clock').textContent = `${h}:${m}:${s}`;
+
+  const mins = ist.getHours()*60 + ist.getMinutes();
+  const isWeekend = ist.getDay()===0||ist.getDay()===6;
+  const el = document.getElementById('mktStatus');
+  const si = document.getElementById('session-info');
+
+  if(isWeekend){el.textContent='● MARKET CLOSED';el.className='market-status market-closed';if(si)si.textContent='Weekend — Market Band Hai';}
+  else if(mins>=555&&mins<570){el.textContent='● PRE-OPEN';el.className='market-status market-open';if(si)si.textContent='Pre-Open Session (9:00–9:15 AM)';}
+  else if(mins>=570&&mins<930){el.textContent='● MARKET OPEN';el.className='market-status market-open';
+    if(si){
+      if(mins<585)si.textContent='⚠️ Opening Phase — Pehle 15 min wait karo!';
+      else if(mins<690)si.textContent='✅ Morning Session — Best Trading Time!';
+      else if(mins<810)si.textContent='⚠️ Midday Slow Phase — Reduce exposure';
+      else if(mins<900)si.textContent='✅ Afternoon Session — Good for trading';
+      else si.textContent='🚫 Closing Phase — Avoid new trades';
+    }
+  }
+  else{el.textContent='● MARKET CLOSED';el.className='market-status market-closed';if(si)si.textContent='Market Band Hai';}
+
+  // Session highlights
+  const sessions=[
+    {id:'sess-preopen',start:540,end:555},
+    {id:'sess-opening',start:555,end:570},
+    {id:'sess-morning',start:570,end:690},
+    {id:'sess-midday',start:690,end:810},
+    {id:'sess-afternoon',start:810,end:900},
+    {id:'sess-close',start:900,end:930}
+  ];
+  sessions.forEach(s=>{
+    const el=document.getElementById(s.id);
+    if(el) el.classList.toggle('active-session', mins>=s.start&&mins<s.end&&!isWeekend);
+  });
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// ── TABS ──
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showCalc(name) {
+  document.querySelectorAll('.it-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.it-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('calc-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── CHECKLIST ──
+function toggleCheck(el) {
+  el.classList.toggle('chk');
+  el.querySelector('.cb').textContent = el.classList.contains('chk') ? '✓' : '';
+  updateProgress();
+  saveChecklist();
+}
+function updateProgress() {
+  const items = document.querySelectorAll('.ci');
+  const done = document.querySelectorAll('.ci.chk').length;
+  const pct = (done/items.length)*100;
+  document.getElementById('cl-bar').style.width = pct+'%';
+  document.getElementById('cl-count').textContent = `${done} / ${items.length}`;
+}
+function saveChecklist() {
+  const state = Array.from(document.querySelectorAll('.ci')).map(i=>i.classList.contains('chk'));
+  const today = new Date().toDateString();
+  localStorage.setItem('cl_state', JSON.stringify(state));
+  localStorage.setItem('cl_date', today);
+}
+function loadChecklist() {
+  const today = new Date().toDateString();
+  if(localStorage.getItem('cl_date') !== today) return;
+  const state = JSON.parse(localStorage.getItem('cl_state')||'[]');
+  document.querySelectorAll('.ci').forEach((item,i)=>{
+    if(state[i]){item.classList.add('chk');item.querySelector('.cb').textContent='✓';}
+  });
+  updateProgress();
+}
+function resetChecklist() {
+  document.querySelectorAll('.ci').forEach(i=>{i.classList.remove('chk');i.querySelector('.cb').textContent='';});
+  updateProgress();
+  localStorage.removeItem('cl_state');
+}
+loadChecklist();
+
+// ── JOURNAL ──
+let trades = JSON.parse(localStorage.getItem('trades')||'[]');
+document.getElementById('j-date').value = new Date().toISOString().split('T')[0];
+
+function addTrade() {
+  const entry=parseFloat(document.getElementById('j-entry').value);
+  const exit=parseFloat(document.getElementById('j-exit').value);
+  const qty=parseFloat(document.getElementById('j-qty').value)||1;
+  const type=document.getElementById('j-type').value;
+  if(!entry||!exit){alert('Entry aur Exit price dalo!');return;}
+  const dir = type==='BUY'?1:-1;
+  const pnl = (exit-entry)*dir*qty;
+  trades.push({
+    date:document.getElementById('j-date').value,
+    instrument:document.getElementById('j-instrument').value||'N/A',
+    type, entry, exit, qty,
+    pnl: Math.round(pnl),
+    notes:document.getElementById('j-notes').value
+  });
+  localStorage.setItem('trades',JSON.stringify(trades));
+  renderTrades();
+  document.getElementById('j-instrument').value='';
+  document.getElementById('j-entry').value='';
+  document.getElementById('j-exit').value='';
+  document.getElementById('j-qty').value='';
+  document.getElementById('j-notes').value='';
+}
+function deleteTrade(idx){trades.splice(idx,1);localStorage.setItem('trades',JSON.stringify(trades));renderTrades();}
+function renderTrades() {
+  const tbody = document.getElementById('trade-tbody');
+  if(!trades.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted);">Abhi koi trade nahi hai. Pehla trade add karo! 🚀</td></tr>';updateStats();return;}
+  tbody.innerHTML = trades.map((t,i)=>`
+    <tr>
+      <td>${t.date}</td><td>${t.instrument}</td>
+      <td><span class="tag ${t.type==='BUY'?'tag-buy':'tag-sell'}">${t.type}</span></td>
+      <td>₹${t.entry}</td><td>₹${t.exit}</td><td>${t.qty}</td>
+      <td style="color:${t.pnl>=0?'var(--green)':'var(--red)'};font-weight:700;font-family:'JetBrains Mono',monospace;">${t.pnl>=0?'+':''}₹${t.pnl}</td>
+      <td><span class="tag ${t.pnl>=0?'tag-win':'tag-loss'}">${t.pnl>=0?'WIN':'LOSS'}</span></td>
+      <td style="font-size:11px;color:var(--muted);">${t.notes||'-'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="deleteTrade(${i})" style="color:var(--red);">✕</button></td>
+    </tr>`).join('');
+  updateStats();
+}
+function updateStats() {
+  const wins=trades.filter(t=>t.pnl>=0).length;
+  const losses=trades.filter(t=>t.pnl<0).length;
+  const netPnl=trades.reduce((a,t)=>a+t.pnl,0);
+  document.getElementById('stat-trades').textContent=trades.length;
+  document.getElementById('stat-wins').textContent=wins;
+  document.getElementById('stat-losses').textContent=losses;
+  const pnlEl=document.getElementById('stat-pnl');
+  pnlEl.textContent=(netPnl>=0?'+':'')+'₹'+netPnl.toLocaleString('en-IN');
+  pnlEl.style.color=netPnl>=0?'var(--green)':'var(--red)';
+}
+function exportJournal() {
+  if(!trades.length){alert('Koi trade nahi hai export karne ke liye!');return;}
+  const header='Date,Instrument,Type,Entry,Exit,Qty,PnL,Notes\n';
+  const rows=trades.map(t=>`${t.date},${t.instrument},${t.type},${t.entry},${t.exit},${t.qty},${t.pnl},"${t.notes}"`).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(header+rows);
+  a.download='trading_journal.csv';a.click();
+}
+renderTrades();
+
+// ── P&L CALC ──
+function updateLotSize(){
+  const v=document.getElementById('pl-type').value;
+  document.getElementById('pl-lot').value=v==='custom'?'':v;
+}
+function calcPL(){
+  const entry=parseFloat(document.getElementById('pl-entry').value)||0;
+  const exit=parseFloat(document.getElementById('pl-exit').value)||0;
+  const lot=parseFloat(document.getElementById('pl-lot').value)||75;
+  const num=parseFloat(document.getElementById('pl-num').value)||1;
+  const brok=parseFloat(document.getElementById('pl-brok').value)||40;
+  const dir=parseInt(document.getElementById('pl-pos').value);
+  const gross=(exit-entry)*dir*lot*num;
+  const taxes=brok+(Math.abs(gross)*0.001875); // STT + GST approx
+  const net=gross-taxes;
+  const perpt=lot*num*dir;
+  const box=document.getElementById('pl-result');
+  box.style.display='block';
+  box.className='result-box'+(gross<0?' red-box':'');
+  document.getElementById('pl-main').textContent=(gross>=0?'+':'')+'₹'+gross.toFixed(0);
+  document.getElementById('pl-main').style.color=gross>=0?'var(--green)':'var(--red)';
+  document.getElementById('pl-gross').textContent=(gross>=0?'+':'')+'₹'+gross.toFixed(0);
+  document.getElementById('pl-charges').textContent='−₹'+taxes.toFixed(0);
+  document.getElementById('pl-net').textContent=(net>=0?'+':'')+'₹'+net.toFixed(0);
+  document.getElementById('pl-net').style.color=net>=0?'var(--green)':'var(--red)';
+  document.getElementById('pl-perpoint').textContent='₹'+Math.abs(perpt)+'/point';
+}
+
+// ── POSITION SIZE ──
+function calcPosition(){
+  const cap=parseFloat(document.getElementById('ps-capital').value)||0;
+  const riskSel=document.getElementById('ps-risk').value;
+  const riskPct=riskSel==='custom'?parseFloat(document.getElementById('ps-custom-risk').value)||1:parseFloat(riskSel);
+  const entry=parseFloat(document.getElementById('ps-entry').value)||0;
+  const sl=parseFloat(document.getElementById('ps-sl').value)||0;
+  const lotSize=parseFloat(document.getElementById('ps-lotsize').value)||75;
+  if(!cap||!entry||!sl){return;}
+  const maxRisk=(cap*riskPct)/100;
+  const slPts=Math.abs(entry-sl);
+  const units=slPts>0?maxRisk/slPts:0;
+  const lots=units/lotSize;
+  document.getElementById('pos-result').style.display='grid';
+  document.getElementById('ps-amt').textContent='₹'+maxRisk.toFixed(0);
+  document.getElementById('ps-units').textContent=Math.floor(units);
+  document.getElementById('ps-lots').textContent=lots.toFixed(2);
+  document.getElementById('ps-slpts').textContent=slPts.toFixed(0)+' pts';
+}
+
+// ── RR CALC ──
+function calcRR(){
+  const entry=parseFloat(document.getElementById('rr-entry').value)||0;
+  const sl=parseFloat(document.getElementById('rr-sl').value)||0;
+  const target=parseFloat(document.getElementById('rr-target').value)||0;
+  if(!entry||!sl||!target)return;
+  const risk=Math.abs(entry-sl);
+  const reward=Math.abs(target-entry);
+  const ratio=reward/risk;
+  document.getElementById('rr-result').style.display='block';
+  document.getElementById('rr-ratio').textContent='1 : '+ratio.toFixed(2);
+  document.getElementById('rr-risk-pts').textContent=risk.toFixed(0)+' pts';
+  document.getElementById('rr-reward-pts').textContent=reward.toFixed(0)+' pts';
+  const riskFlex=1;const rewardFlex=ratio;
+  document.getElementById('rr-risk-bar').style.flex=riskFlex;
+  document.getElementById('rr-reward-bar').style.flex=rewardFlex;
+  let rating='';
+  if(ratio<1)rating='<span style="color:var(--red)">❌ Poor — Avoid</span>';
+  else if(ratio<1.5)rating='<span style="color:var(--yellow)">⚠️ OK</span>';
+  else if(ratio<2)rating='<span style="color:var(--yellow)">⚠️ Acceptable</span>';
+  else if(ratio<3)rating='<span style="color:var(--green)">✅ Good</span>';
+  else if(ratio<4)rating='<span style="color:var(--green)">🔥 Great</span>';
+  else rating='<span style="color:var(--green)">🚀 Elite Setup!</span>';
+  document.getElementById('rr-rating').innerHTML=rating;
+}
+
+// ── SR / PIVOT CALC ──
+function calcSR(){
+  const h=parseFloat(document.getElementById('sr-high').value)||0;
+  const l=parseFloat(document.getElementById('sr-low').value)||0;
+  const c=parseFloat(document.getElementById('sr-close').value)||0;
+  if(!h||!l||!c)return;
+  const method=document.getElementById('sr-method').value;
+  let pp,r1,r2,r3,s1,s2,s3;
+  if(method==='standard'){
+    pp=(h+l+c)/3;
+    r1=(2*pp)-l; r2=pp+(h-l); r3=h+2*(pp-l);
+    s1=(2*pp)-h; s2=pp-(h-l); s3=l-2*(h-pp);
+  } else { // camarilla
+    pp=(h+l+c)/3;
+    const range=h-l;
+    r1=c+(range*1.1/12); r2=c+(range*1.1/6); r3=c+(range*1.1/4);
+    s1=c-(range*1.1/12); s2=c-(range*1.1/6); s3=c-(range*1.1/4);
+  }
+  document.getElementById('sr-result').style.display='flex';
+  ['r3','r2','r1','pivot','s1','s2','s3'].forEach(id=>{
+    const val={r3,r2,r1,pivot:pp,s1,s2,s3}[id];
+    document.getElementById('sr-'+id).textContent=val.toFixed(2);
+  });
+}
+
+// ── SENTIMENT ──
+let sfValues=[70,65,55,60,45,50];
+function updateSF(idx,val){
+  sfValues[idx-1]=parseInt(val);
+  const el=document.getElementById('sf'+idx);
+  const vel=document.getElementById('sf'+idx+'v');
+  const color=val>60?'var(--green)':val>40?'var(--yellow)':'var(--red)';
+  el.style.width=val+'%';el.style.background=color;
+  vel.textContent=val;vel.style.color=color;
+}
+function calcSentiment(){
+  const avg=sfValues.reduce((a,b)=>a+b,0)/sfValues.length;
+  setSentiment(Math.round(avg));
+}
+function setSentiment(score){
+  document.getElementById('sent-score').textContent=score;
+  const needle=document.getElementById('sent-needle');
+  const angle=(score/100)*180-90;
+  needle.style.transform=`rotate(${angle}deg)`;
+  const arc=document.getElementById('sent-arc');
+  arc.style.strokeDashoffset=314-(score/100)*314;
+  let label,color;
+  if(score<20){label='EXTREME FEAR';color='var(--red)';}
+  else if(score<40){label='FEAR';color='var(--red)';}
+  else if(score<60){label='NEUTRAL';color='var(--yellow)';}
+  else if(score<80){label='GREED';color='var(--green)';}
+  else{label='EXTREME GREED';color='var(--green)';}
+  document.getElementById('sent-label').textContent=label;
+  document.getElementById('sent-label').style.color=color;
+  document.getElementById('sent-score').style.color=color;
+}
+setSentiment(50);
+
+// ── TIMER ──
+let countdownInterval=null;
+function startCountdown(mins){
+  clearInterval(countdownInterval);
+  let secs=mins*60;
+  updateCountdownDisplay(secs);
+  countdownInterval=setInterval(()=>{
+    secs--;
+    if(secs<=0){clearInterval(countdownInterval);document.getElementById('countdown').textContent='TIME UP!';try{new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAA==').play();}catch(e){}}
+    else updateCountdownDisplay(secs);
+  },1000);
+}
+function updateCountdownDisplay(s){
+  document.getElementById('countdown').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+function stopCountdown(){clearInterval(countdownInterval);document.getElementById('countdown').textContent='00:00';}
+
+// ── NOTES ──
+function saveNotes(){localStorage.setItem('trader_notes',document.getElementById('my-notes').value);}
+function clearNotes(){document.getElementById('my-notes').value='';localStorage.removeItem('trader_notes');}
+const savedNotes=localStorage.getItem('trader_notes');
+if(savedNotes)document.getElementById('my-notes').value=savedNotes;
+</script>
+</body>
+</html>
